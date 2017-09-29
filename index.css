@@ -1,0 +1,8 @@
+#markdown img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: navy;
+    border: 4px solid blue;
+    padding: 8px;
+}

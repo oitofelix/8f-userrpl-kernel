@@ -1,0 +1,3 @@
+baseurl: /8f-userrpl-kernel
+highlighter: rouge
+exclude: ['platforms', 'plugins']
