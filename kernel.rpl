@@ -1,0 +1,1011 @@
+%%HP: T(0)A(D)F(.);
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ KERNEL.S -- 8F UserRPL Kernel
+@
+@ Copyright (C) 2017 Bruno Felix Rezende Ribeiro <oitofelix@@gnu.org>
+@
+@ This program is free software; you can redistribute it and/or modify
+@ it under the terms of the GNU General Public License as published by
+@ the Free Software Foundation; either version 3, or (at your option)
+@ any later version.
+@
+@ This program is distributed in the hope that it will be useful,
+@ but WITHOUT ANY WARRANTY; without even the implied warranty of
+@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+@ GNU General Public License for more details.
+@
+@ You should have received a copy of the GNU General Public License
+@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+DIR
+
+$TITLE "8FKERNEL"
+
+$ROMID 769.
+
+$CONFIG
+´
+ HOME $ROMID ATTACH
+ª
+
+$VISIBLE
+{
+ @Misc@
+ ABOUT
+
+ @Filesystem@
+ RCLH STOH PURGEH RCLC STOC PURGEC
+
+ @Library@
+ LIBDOERR LIBERRN LIBHELPVIEW
+
+ @Program@
+ MULTI
+
+ @List@
+ QUICKSORT SUMLIST PRODLIST STREAMLIST DOLISTX PAIRLIST UNPAIRLIST DROPLIST
+
+ @String@
+ TOKENIZE SçR RANDSTR
+
+ @GUI@
+ VIEWBOX ASKQUESTION CHOOSEN VIEWSTR VIEWGROB
+
+ @Audio@
+ BEEPK DECTONE PLAYTUNE
+
+ @Graphics@
+ RANDGROB GAND
+
+ @Encryption@
+ ENCRYPT DECRYPT
+
+ @Symbolic@
+ CMDçFUN
+}
+
+$HIDDEN
+{
+ $ROMID $logo $music $cachedir $INSERTSORTSTACK $QUICKSORTSTACK
+}
+
+$MESSAGE
+{
+ @1@ "Invalid Tone"
+}
+
+$logo
+GROB 129 47 00000C10000000000000000000000000000000CF70000000000000000000000000000000FFF0000000000000000000000000000000FFF10000700000000000000000000000087EF3000CF1CF700000000000000000000810F7000E83C0000000000000000000000C00CF000603C00000000000000000000006008F100606C00000000000000000000006000F100603C00000000000000000000007000F300E03C00038000000F3CFC0000003000E3008F1CF303800000036C8D0000003000E300CF1CF30388783C634C8D0000083000C700603C00038C044C136C8D0000083E1F8700606C00038402CC033C8D00000831009700706C00038C1EFC0F3CFC00000C3C068F00706C000380720C036C0C00000C30008F00607C0003C0C20C034C0C00000C30008F00E83C0002C0C68C03CC0C00000C30008F00CF1C000C7C7CFC038C0CF1000C30008F000000000000000000000000000C30C08F000000000000000000000000000830008F000000000000000000000000000870E18F000000000000000000000000000870F38F00000000000000000000000000087804CF00000000000000000000000000087000CF000000000000000000000000000870C0CF000000000000000000000000000870C0CF000000000000000000000000000CF0C0CF0000FFF70600000000000300000CF000CF000000060300000000000300000CF0E1CF1000CFF7C100000000000300000EF0F3CF10000006E081003030810300000EF0E1CF10000FF770E70D3DF0E70300000FF000CF1000000E303C0703C03C0300000F7100AF30000CFF1818030388180300008F72009F3000000E181813018818130000CF34088F700000F738FF110188FF130000EF48048FF0000006681001018810030000E1801248F30000C7C8100101881003000060F021C3F30000068130010180300300001843C0B487000007037801018078030008064C1E881400000606EF010180EF030004C508E508EC000000000000000000000002A04804804900000000000000000000000294480488421000000000000000000000011008040002100000000000000000000001944000884220000000000000000000000
+
+$music
+"4- 8- 16b2 16a2 4b2 4e2 4- 8- 16c3 16b2 8c3 8b2 4a2 4- 8- 16c3 16b2 4c3 4e2 4- 8- 16a2 16g2 8a2 8g2 8#f2 8a2 4g2 8- 16#f2 16g2 4a2 8- 16g2 16a2 8b2 8a2 8g2 8#f2 4e2 4c3 2b2 4- 16b2 16c3 16b2 16a2 1b2"
+
+$cachedir "8FK"
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ MISC SECTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ ABOUT
+@
+@ ç
+@
+@ Shows kernel build number, author contact information and a hopefully nice
+@ logo as well.  The build number is actually the date of compilation.
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ABOUT
+´
+ $logo
+ "" 1. çGROB GROBADD
+ "Build " DATE 10. 6. ^ * RçI + 1. çGROB GROBADD
+ "http://oitofelix.github.io/" 1. çGROB GROBADD
+ 1500. .1 BEEP
+ VIEWGROB
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ FILESYSTEM SECTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ RCLH
+@
+@ 'id' ç ob 1.
+@ 'id' ç 0.
+@
+@ Recalls object named 'id' from the hidden directory.  Returns 1. and the
+@ respective object in case the name exists, 0. otherwise.  The return code is
+@ useful for defining conditionals for the sake of falling back to default
+@ values.
+@
+@ See: STOH, PURGEH
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+RCLH
+´
+ ç id
+ ´
+  IF id TYPE @global name@ 6. SAME THEN
+   id @RclHiddenVar@ #370AFh SYSEVAL
+   @COERCEFLAG@ #2602Bh SYSEVAL
+  ELSE @Bad Argument Type@ #202h DOERR
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ STOH
+@
+@ ob 'id' ç
+@
+@ Stores object using name 'id' inside the hidden directory.  The previous
+@ object is overwritten in case the name already exists. The hidden directory
+@ is the one having a null name at HOME's root.  The operating system uses it
+@ for storing user settings.  One can access it using the following RPL code:
+@ "" S~N EVAL
+@
+@ See: RCLH, PURGEH
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+STOH
+´
+ ç ob id
+ ´
+  IF id TYPE @global name@ 6. SAME THEN
+   ob id @StoHiddenVar@ #37104h SYSEVAL
+  ELSE @Bad Argument Type@ #202h DOERR
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PURGEH
+@
+@ 'id' ç
+@
+@ Purges object named 'id' from the hidden directory, in case it exists
+@ otherwise do nothing.
+@
+@ See: STOH, RCLH
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PURGEH
+´
+ ç id
+ ´
+  IF id TYPE @global name@ 6. SAME THEN
+   id @PuHiddenVar@ #37118h SYSEVAL
+  ELSE @Bad Argument Type@ #202h DOERR
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ RCLC
+@
+@ 'id' ç ob 1.
+@ 'id' ç 0.
+@
+@ Recalls object named 'id' from the cache system.  Returns 1. and the
+@ respective object in case the name exists, 0. otherwise.  The return code is
+@ useful for defining conditionals for the sake of falling back to default
+@ values.
+@
+@ See: STOC, PURGEC
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+RCLC
+´
+ ç id
+ ´
+  IFERR "." $cachedir + "/" + id + 'SD' çTAG RCL THEN DROP
+   IFERR "$" $cachedir + "$" + id + STRç 'E' çTAG RCL THEN DROP
+    IFERR "$" $cachedir + "$" + id + STRç 'F' çTAG RCL THEN DROP
+     IFERR "$" $cachedir + "$" + id + STRç 'R' çTAG RCL THEN DROP
+      0.
+     ELSE 1. END
+    ELSE 1. END
+   ELSE 1. END
+  ELSE 1. END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ STOC
+@
+@ ob 'id' ç
+@
+@ Stores object using name 'id' in the cache system.  The previous
+@ object is overwritten in case the name already exists.  The cache is useful
+@ for storing large data in order to speed up recurrent access to them.  The
+@ cache system tries to make the best possible use of the available memory,
+@ avoiding to consume scarce resources like working RAM.  This is accomplished
+@ by using ports in the following sequence: 3, 1, 2, 0.  Later ports are
+@ fallback of earliers, in case those are not present or haven't enough room.
+@ Objects are stored with an appropriately distinct suffix ("$8FK$") for ports
+@ 1, 2 and 0, or inside a directory ("\.8F$\") for port 3.
+@
+@ See: RCLC, PURGEC
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+STOC
+´
+ ç ob id
+ ´
+  id PURGEC
+  IFERR ob "." $cachedir + "/" + id + 'SD' çTAG STO THEN DROP2
+   IFERR ob "$" $cachedir + "$" + id + STRç 'E' çTAG STO THEN DROP2
+    IFERR ob "$" $cachedir + "$" + id + STRç 'F' çTAG STO THEN DROP2
+     IFERR ob "$" $cachedir + "$" + id + STRç 'R' çTAG STO THEN DROP2
+     END
+    END
+   END
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PURGEC
+@
+@ 'id' ç
+@
+@ Purges object named 'id' from the cache system, in case it exists
+@ otherwise do nothing.
+@
+@ See: RCLC, STOC
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PURGEC
+´
+ NOVAL NOVAL NOVAL NOVAL ç id sd eram flash iram
+ ´
+  {} "." $cachedir + "/" + id + 'SD' çTAG + 'sd' STO
+  IFERR IF sd EVAL VTYPE -1. SAME NOT THEN sd EVAL PURGE END THEN DROP END
+
+  {} "$" $cachedir + "$" + id + STRç 'E' çTAG + 'eram' STO
+  IFERR IF eram EVAL VTYPE -1. SAME NOT THEN eram EVAL PURGE END THEN DROP END
+
+  {} "$" $cachedir + "$" + id + STRç 'F' çTAG + 'flash' STO
+  IFERR IF flash EVAL VTYPE -1. SAME NOT THEN flash EVAL PURGE END THEN DROP END
+
+  {} "$" $cachedir + "$" + id + STRç 'R' çTAG + 'iram' STO
+  IFERR IF iram EVAL VTYPE -1. SAME NOT THEN iram EVAL PURGE END THEN DROP END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ LIBRARY SECTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ LIBDOERR
+@
+@ %romid %msg ç
+@
+@ Raises an error specified by its number %msg and the library whose id %romid,
+@ it belongs to.  These messages are defined in the library's $MESSAGE list.
+@
+@ See: LIBERRN
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+LIBDOERR
+´
+ ç romid msg
+ ´
+  romid 256. * msg + DOERR
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ LIBERRN
+@
+@ ç %romid %msg
+@
+@ Returns the error specification (in the same format accepted by LIBDOERR) of
+@ the lastest raised error.
+@
+@ See: LIBDOERR
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+LIBERRN
+´
+ ERRN DUP SRB BçR SWAP #FFh AND BçR
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ LIBHELPVIEW
+@
+@ {catalog} ç
+@
+@ Intended to be used by libraries in their extension program (referenced by
+@ $EXTPRG) for providing catalog help services (by responding to messages
+@ ExtMesHelp and ExtMesDoHelp).  When called (asside from its single argument)
+@ the stack should be in the state expected for $EXTPRG message processing.
+@
+@ The argument {catalog} is a list (usually stored in the library's $HELP
+@ variable) of pairs {'command' "help" ...} where 'command' is the command
+@ symbol and "help" its respective help message.
+@
+@ When responding to ExtMesHelp it checks whether the required symbol is
+@ defined in {catalog}.  This command provides a simples help viewer (given by
+@ VIEWSTR) when responding to ExtMesDoHelp.
+@
+@ See: VIEWSTR
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+LIBHELPVIEW
+´
+ ç msg catalog
+ ´
+  CASE
+   @ExtMesHelp@ msg R~SB 9. SAME THEN
+    IF OVER catalog SWAP POS THEN
+     DROP @TRUE@ #3A81h SYSEVAL msg
+    ELSE msg
+    END
+   END
+
+   @ExtMesDoHelp@ msg R~SB 10. SAME THEN
+     catalog SWAP POS 1. +
+     catalog SWAP GET VIEWSTR
+     @FALSE@ #3AC0h SYSEVAL
+   END
+
+   msg
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PROGRAM SECTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ MULTI
+@
+@ ob ´programª ç object_result
+@
+@ Applies ´programª to object ob repeatedly until the program no longer
+@ changes it.
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+MULTI
+´
+ ç P
+ ´
+  DO DUP P EVAL DUP ROT
+  UNTIL SAME END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ LIST SECTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $INSERTSORTSTACK
+@
+@ %low %high ç
+@
+@ Sorts stack elements ranging from level %low to level %high using a simple
+@ stack-based insertion algorithm.  This algorithm has in average quadratic
+@ efficiency, but is often faster than Quicksort for a sufficiently small
+@ number of elements.  This command exists to allow for the $QUICKSORTSTACK
+@ command to provide an hybrid implementation of Quicksort.
+@
+@ See: $QUICKSORTSTACK
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$INSERTSORTSTACK
+´
+ ç low high
+ ´
+  IF low high < THEN
+   high 1. - low
+   FOR I high I 1. +
+    FOR J
+     IF I PICK J 1. + PICK écmp EVAL 0. < THEN
+      I ROLL J ROLLD
+     END -1.
+    STEP -1.
+   STEP
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $QUICKSORTSTACK
+@
+@ %low %high ç
+@
+@ Sorts stack elements ranging from level %low to level %high using a carefully
+@ implemented hybrid Quicksort algorith with the following nice properties:
+@
+@ 1. Iteractive;
+@ 2. Stack-based;
+@ 3. In place;
+@ 4. Median of three pivot selection;
+@ 5. Pivotal range simplification;
+@ 6. Recursion over minimal partition optimization;
+@ 7. Insertion sort fallback for small partitions;
+@
+@ See: $INSERTSORTSTACK
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$QUICKSORTSTACK
+´
+ NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL
+ NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL NOVAL
+ ç low high highest nparts plow phigh top p c I
+     p1i p2i p3i p1 p2 p3 dhl
+ ´
+  0. 'nparts' STO
+  high 1. + 'highest' STO
+
+  DO
+   CASE
+    @fall back to insertion sort for small partitions@
+    low high < high low - 10. < AND THEN
+     low high $INSERTSORTSTACK
+     0. DUP 'low' STO 'high' STO
+    END
+
+    @quick sort algorithm@
+    low high < THEN
+     @Median of three pivot selection@
+     high low - 'dhl' STO
+     dhl RAND * 0. RND low + DUP 'p1i' STO PICK 'p1' STO
+     dhl RAND * 0. RND low + DUP 'p2i' STO PICK 'p2' STO
+     dhl RAND * 0. RND low + DUP 'p3i' STO PICK 'p3' STO
+
+     CASE
+      p2 p1 écmp EVAL 0. â p1 p3 écmp EVAL 0. â AND
+      p3 p1 écmp EVAL 0. â p1 p2 écmp EVAL 0. â AND OR
+       THEN p1i END
+      p1 p2 écmp EVAL 0. â p2 p3 écmp EVAL 0. â AND
+      p3 p2 écmp EVAL 0. â p2 p1 écmp EVAL 0. â AND OR
+       THEN p2i END
+      p3i
+     END
+
+     @initialize pivot ranges and top comparison limit@
+     DUPDUP 'plow' STO 'phigh' STO PICK 'p' STO
+     high 'top' STO
+
+     @partition the lower section@
+     low 'I' STO
+     WHILE I plow < REPEAT
+      I PICK p écmp EVAL 'c' STO
+      CASE
+       c 0. < THEN
+        I ROLL high ROLLD
+        'plow' 1. STO-
+        'phigh' 1. STO-
+        'top' 1. STO-
+       END
+       c 0. SAME THEN
+        I ROLL plow ROLLD
+        'plow' 1. STO-
+       END
+       'I' 1. STO+
+      END
+     END
+
+     @partition the upper section@
+     IF phigh 1. + top â THEN
+      phigh 1. + top
+      FOR I
+       I PICK p écmp EVAL 'c' STO
+       CASE
+        c 0. > THEN
+         I ROLL low ROLLD
+         'plow' 1. STO+
+         'phigh' 1. STO+
+        END
+        c 0. SAME THEN
+         I ROLL plow ROLLD
+         'phigh' 1. STO+
+        END
+       END
+      NEXT
+     END
+
+     @recurse into the smaller section and delay
+     @recursion into the other one
+     IF plow 1. - low - high phigh 1. + - â THEN
+      @delay recursion into upper section@
+      phigh 1. + highest ROLLD
+      high highest ROLLD
+      'nparts' 1. STO+
+      @recurse into lower section@
+      plow 1. - 'high' STO
+     ELSE
+      @delay recursion into lower section@
+      low highest ROLLD
+      plow 1. - highest ROLLD
+      'nparts' 1. STO+
+      @recurse into upper section@
+      phigh 1. + 'low' STO
+     END
+    END
+
+    @recurse into most recently delayed larger section@
+    nparts 0. > THEN
+     highest ROLL 'high' STO
+     highest ROLL 'low' STO
+     'nparts' 1. STO-
+    END
+   END
+  UNTIL nparts 0. SAME high low â AND END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ QUICKSORT
+@
+@ {listIn} ´cmpª ç {listOut}
+@
+@ Sorts {listIn} in ascending order using based on the comparison program
+@ ´cmpª.  The comparison program must accept two arguments and return a
+@ negative, zero or positive number in case its first argument is less than,
+@ equal to or greater than its second argument, respectively.  For descending
+@ order call REVLIST after this.
+@
+@ This command is just a list-based wrapper around $QUICKSORTSTACK.
+@
+@ See: REVLIST
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+QUICKSORT
+´
+ NOVAL ç list écmp size
+ ´
+  list LISTç 'size' STO
+  1. size $QUICKSORTSTACK
+  size çLIST
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ SUMLIST
+@
+@ {list} ç sum
+@
+@ If the list has two or more elements acts exactly like ÖLIST.
+@ Otherwise returns its element, if any, or 0 if none.
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+SUMLIST
+´
+ DUP SIZE
+ CASE
+  DUP 1. > THEN DROP ÖLIST END
+  DUP 1. SAME THEN DROP HEAD END
+  DROP 0
+ END
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PRODLIST
+@
+@ {list} ç product
+@
+@ If the list has two or more elements acts exactly like úLIST.
+@ Otherwise returns its element, if any, or 1 if none.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PRODLIST
+´
+ DUP SIZE
+ CASE
+  DUP 1. > THEN DROP úLIST END
+  DUP 1. SAME THEN DROP HEAD END
+  DROP 1
+ END
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ STREAMLIST
+@
+@ {list} obj ç result
+@
+@ If the list has two or more elements acts exactly like STREAM.
+@ Otherwise returns its element, if any.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+STREAMLIST
+´
+ IF OVER SIZE 1. >
+ THEN STREAM
+ ELSE DROP HEAD
+ END
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ DOLISTX
+@
+@ {list1}...{listn} %args obj ç {list2}
+@
+@ If the list has one or more elements acts exactly like DOLIST.
+@ Otherwise returns the empty list.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+DOLISTX
+´
+ 1. ç depth
+ ´
+  IF PICK3 {} SAME
+  THEN OVER 2. + DROPN {}
+  ELSE DEPTH PICK3 2. + - 'depth' STO+ DOLIST
+	 IF DEPTH depth < THEN {} END
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PAIRLIST
+@
+@ {e11...e1n} {e21...e2n} ç {e11 e21 ... e1n e2n}
+@
+@ Pair two lists.
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PAIRLIST
+´
+ ç l1 l2
+ ´
+  l1 l2 2. ´ª DOLIST
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ UNPAIRLIST
+@
+@ {e11 e21 ... e1n e2n} ç {e11...e1n} {e21...e2n}
+@
+@ Unpair two lists.
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+UNPAIRLIST
+´
+ {} {} ç l l1 l2
+ ´
+  WHILE l SIZE 0. > REPEAT
+	 l1 LISTç l HEAD SWAP 1. + çLIST 'l1' STO
+	 l TAIL 'l' STO
+	 l2 LISTç l HEAD SWAP 1. + çLIST 'l2' STO
+	 l TAIL 'l' STO
+	END
+	l1 l2
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ DROPLIST
+@
+@ {list1} %n ç {list2}
+@
+@ Drops element number %n of {list1}.
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+DROPLIST
+´
+ ç list n
+ ´
+  list LISTç DUP 2. + n - ROLL DROP 1. - çLIST
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ STRING SECTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ TOKENIZE
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+TOKENIZE
+´
+ ç str sep
+ ´
+  str WHILE sep sep + sep SREPL REPEAT END
+  IF DUP HEAD sep SAME THEN TAIL END
+  IF DUPDUP SIZE DUP SUB sep SAME THEN 1. OVER SIZE 1. - SUB END
+  "{\"" SWAP + "\"}" +
+  sep "\"\"" SREPL DROP STRç
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ SçR
+@
+@ "str" ç x
+@
+@ Derives a real number from a given string.
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+SçR
+´
+ ç str
+ ´
+  str #0d
+  #1d str SIZE RçB
+  START RLB OVER NUM RçB XOR SWAP TAIL SWAP NEXT
+  NIP BçR IF DUP NOT THEN DROP 1. END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ RANDSTR
+@
+@ n ç "str_rand"
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+RANDSTR
+´
+ ç n
+ ´
+  ""
+  #1d n RçB
+  START 255. RAND * 0. RND CHR + NEXT
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ GUI SECTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ VIEWBOX
+@
+@ title {item_1...item_n} ç
+@
+@ View-only version of CHOOSEBOX using the HP48 engine.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+VIEWBOX
+´
+ ç title data
+ ´
+  ´ª title ´çSTRª data 0. R~SB @~Choose@ #B3000h LIBEVAL DROP
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ ASKQUESTION
+@
+@ $ ç flag
+@
+@ Use the string to ask the user a question with yes/no in a choose box.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ASKQUESTION
+´
+ ç question
+ ´
+  question çSTR @AskQuestion@ #2F1A5h SYSEVAL @COERCEFLAG@ #2602Bh SYSEVAL
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ CHOOSEN
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+CHOOSEN
+´
+ ç title items index
+ ´
+  items LISTç R~SB title çSTR index 1. - R~SB ´ª
+  @^Choose3Index_@ #74002h FLASHEVAL
+  IF @TRUE@ #3A81h SYSEVAL SAME THEN R~SB 1. + 1. ELSE 0. END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ VIEWSTR
+@
+@ ob ç
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+VIEWSTR
+´
+ ç ob
+ ´
+  @FALSE@ #3AC0h SYSEVAL ob çSTR @ViewStrObject@ #2F21Eh SYSEVAL DROP
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ VIEWGROB
+@
+@ ob ç
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+VIEWGROB
+´
+ ç ob
+ ´
+  @FALSE@ #3AC0h SYSEVAL
+  IF ob TYPE 11. SAME NOT THEN ob çGROB ELSE ob END
+  @ViewGrobObject@ #2F21Fh SYSEVAL DROP
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ AUDIO
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ BEEPK
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+BEEPK
+´
+ ç freq duration
+ ´
+  IF freq NOT THEN IF duration 0. > THEN duration WAIT END
+  ELSE freq duration BEEP END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ DECTONE
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+DECTONE
+´
+ NOVAL NOVAL NOVAL NOVAL ç tone tempo r x duration freq
+ ´
+  1. 'x' STO
+  CASE
+   tone x x SUB "2" SAME THEN 2. 'x' 1. STO+ END
+   tone x x SUB "4" SAME THEN 4. 'x' 1. STO+ END
+   tone x x SUB "8" SAME THEN 8. 'x' 1. STO+ END
+   tone x x 1. + SUB "16" SAME THEN 16. 'x' 2. STO+ END
+   tone x x 1. + SUB "32" SAME THEN 32. 'x' 2. STO+ END
+   tone x x SUB "1" SAME THEN 1. 'x' 1. STO+ END
+   @Invalid Tone@ $ROMID #1d LIBDOERR
+  END
+
+  IF tone x x SUB "." SAME THEN DUP 2. * INV SWAP INV + 'x' 1. STO+
+  ELSE INV END
+
+  240. tempo / * 'duration' STO
+
+  IF tone x x SUB "-" SAME THEN 0. 'freq' STO
+  ELSE
+   2. 12. XROOT 'r' STO
+   440. r -9. ^ * 'freq' STO
+   IF tone x x SUB "#" SAME THEN 'freq' r STO* 'x' 1. STO+ END
+   CASE
+    tone x x SUB DUP "C" SAME SWAP "c" SAME OR THEN 0. END
+    tone x x SUB DUP "D" SAME SWAP "d" SAME OR THEN 2. END
+    tone x x SUB DUP "E" SAME SWAP "e" SAME OR THEN 4. END
+    tone x x SUB DUP "F" SAME SWAP "f" SAME OR THEN 5. END
+    tone x x SUB DUP "G" SAME SWAP "g" SAME OR THEN 7. END
+    tone x x SUB DUP "A" SAME SWAP "a" SAME OR THEN 9. END
+    tone x x SUB DUP "B" SAME SWAP "b" SAME OR THEN 11. END
+    @Invalid Tone@ $ROMID #1d LIBDOERR
+   END
+
+   r SWAP ^ 'freq' STO*
+
+   'x' 1. STO+
+
+   CASE
+    tone x x SUB "1" SAME THEN 0. END
+    tone x x SUB "2" SAME THEN 1. END
+    tone x x SUB "3" SAME THEN 2. END
+    @Invalid Tone@ $ROMID #1d LIBDOERR
+   END
+
+   2. SWAP ^ 'freq' STO*
+  END
+
+  freq duration 2. çLIST
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PLAYTUNE
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PLAYTUNE
+´
+ IF DEPTH THEN
+  NOVAL ç tune tempo tune.decoded
+  ´
+   tune " " TOKENIZE 1. ´tempo DECTONEª DOLIST 'tune.decoded' STO
+   WHILE 1. REPEAT
+    tune.decoded 1. ´LISTç DROP BEEPKª DOLIST
+   END
+  ª
+ ELSE
+   $music 125. ´PLAYTUNEª
+ END
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ GRAPHICS
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ RANDGROB
+@
+@ #w #h ç grob
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+RANDGROB
+´
+ ç w h
+ ´
+  w h PDIM
+  #0 h #1 -
+  FOR y
+   #0 w #1 -
+    FOR x
+     IF RAND 0. RND THEN x y 2. çLIST PIXON END
+    NEXT
+  NEXT
+  PICT RCL
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ GAND
+@
+@ grob_target  coord grob_source ç grob
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+GAND
+´
+ ç target coord source
+ ´
+  IF target PICT SAME THEN
+   PICT NEG PICT coord source NEG GOR PICT NEG
+  ELSE
+   target NEG coord source NEG GOR NEG
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ ENCRYPTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ ENCRYPT
+@
+@ ob key ç "ob_encrypted"
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ENCRYPT
+´
+ TICKS RCLF ç ob key ticks flags
+ ´
+  HEX
+  key çH SçR ticks BçR * RDZ
+  ticks çSTR ob çH DUP SIZE RANDSTR XOR +
+  flags STOF
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ DECRYPT
+@
+@ "ob_encrypted" key ç ob
+@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+DECRYPT
+´
+ NOVAL NOVAL ç ob key ticks offset
+ ´
+  ob "h" POS 'offset' STO
+  ob 1. offset SUB STRç 'ticks' STO
+  ob offset 1. + ob SIZE SUB 'ob' STO
+  key çH SçR ticks BçR * RDZ
+  ob DUP SIZE RANDSTR XOR Hç
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ SYMBOLIC SECTION
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ CMDçFUN - Define function from comand
+@
+@ ´commandª ç
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+CMDçFUN
+´
+ ç command
+ ´
+  command DUP COMPç DROP2 SWAP DROP çSTR "X" + S~N STO
+ ª
+ª
+
+END
+
+HOME 256 ATTACH '$D' PGDIR '$D' STO $D CRLIB
+HOME {$D $ROMID} RCL 1 çTAG PURGE 1 STO {$D $ROMID} RCL ATTACH
+HOME '$D' PGDIR

@@ -1,0 +1,801 @@
+%%HP: T(0)A(D)F(.);
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ POLYNOMIAL.S -- 8FCAS polynomial library
+@
+@ Copyright (C) 2017 Bruno Felix Rezende Ribeiro <oitofelix@@gnu.org>
+@
+@ This program is free software; you can redistribute it and/or modify
+@ it under the terms of the GNU General Public License as published by
+@ the Free Software Foundation; either version 3, or (at your option)
+@ any later version.
+@
+@ This program is distributed in the hope that it will be useful,
+@ but WITHOUT ANY WARRANTY; without even the implied warranty of
+@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+@ GNU General Public License for more details.
+@
+@ You should have received a copy of the GNU General Public License
+@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+DIR
+
+$TITLE "POLYNOMIAL (8FCAS)"
+
+$ROMID 770.
+
+$CONFIG
+´
+ HOME $ROMID ATTACH
+ª
+
+$EXTPRG '$EXT'
+
+$EXT
+´
+ $HELP LIBHELPVIEW
+ª
+
+$VISIBLE
+{
+ STOPOLYVX RCLPOLYVX STOPOLYORD RCLPOLYORD
+ PLEX PREVLEX PGRLEX PGREVLEX PORDER
+ MDEG TDEG LCOEF LMONO LTERM PDIV SPOLY
+ MONOMIALS POLYEQ POSPOLY POSPOLYPAIR BUCHBERGER
+ PDIVORDER
+}
+
+$HIDDEN
+{
+ $ROMID $HELP $EXT
+ $PORDER $COEF $MONOçLIST $LISTçMONO $POLYçLIST
+ $LISTçPOLY $MONODIV $MONOLCM $POLYINT
+
+ $BuchDisp
+ $NormalForm
+ $ReduceAll
+ $SelStrategy
+ $NewBasis
+ $Criterion1
+ $Criterion2
+}
+
+$MESSAGE
+{
+ @1@ "Division by null polynomial"
+}
+
+$HELP
+{
+ TDEG "This is help for TDEG. And such things!"
+ MDEG "This is help for MDEG."
+}
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ STOPOLYVX
+@
+@ {names} ç
+@
+@ Stores a list of variable names in the POLYVX CAS variable. This is the same
+@ as storing into the POLYVX variable in the CASDIR directory. By default, the
+@ CAS variable list is {X}.  All variable names therein (and only those) are
+@ regarded by the CAS as symbolic polynomial variables.  The order they are
+@ listed determines the variable's ordering used by the CAS.  Variable names
+@ should be listed in descending order.
+@
+@ See: RCLPOLYVX STOPOLYORD
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+STOPOLYVX
+´
+ PUSH HOME CASDIR 'POLYVX' STO POP
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ RCLPOLYVX
+@
+@ ç
+@
+@ Returns the list of names stored in the POLYVX CAS variable.  This is the
+@ same action as recalling the contents of the variable POLYVX in the CASDIR
+@ directory, except by the fact that if this variable does not exist the {X}
+@ default is returned.
+@
+@ See: STOPOLYVX
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+RCLPOLYVX
+´
+ IFERR :H:{CASDIR POLYVX} RCL THEN DROP {X} END
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ STOPOLYORD
+@
+@ ´ program ª  ç
+@
+@ Stores an internal monomial list representation comparison function in the
+@ POLYORD CAS variable. This is the same as storing into the POLYORD variable
+@ in the CASDIR directory. By default, the CAS monomial comparison function is
+@ ´ PLEX ª.  The following comparison functions are already implemented for
+@ use: PLEX, PREVLEX, PGRLEX and PGREVLEX.  The user may want implement his
+@ own, though.
+@
+@ See: RCLPOLYORD STOPOLYVX PLEX PREVLEX PGRLEX PGREVLEX
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+STOPOLYORD
+´
+ PUSH HOME CASDIR 'POLYORD' STO POP
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ RCLPOLYORD
+@
+@ ç
+@
+@ Returns the internal monomial list representation comparison function stored
+@ in the POLYORD CAS variable.  This is the same action as recalling the
+@ contents of the variable POLYORD in the CASDIR directory, except by the fact
+@ that if this variable does not exist the ´ PLEX ª default is returned.
+@
+@ See: STOPOLYORD
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+RCLPOLYORD
+´
+ IFERR :H:{CASDIR POLYORD} RCL THEN DROP ´PLEXª END
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ TDEG
+@
+@ polynomial  ç integer
+@
+@ Returns the total degree of a polynomial expression.  This is defined as the
+@ maximum of the sums of the exponents of each monomial in the expression.
+@ If the polynomial is zero, returns an undefined negative number.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+TDEG
+´
+ $POLYçLIST 1. ´TAIL SUMLISTª DOLIST ´MAXª STREAMLIST
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ MDEG
+@
+@ polynomial ç integer
+@
+@ Returns the multidegree of a polynomial expression.  This is defined as the
+@ n-tuple of exponents of the maximum monomial.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+MDEG
+´
+ $POLYçLIST $PORDER DUP SIZE GET TAIL
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ LCOEF
+@
+@ polynomial ç number
+@
+@ Returns the leading coefficient of a polynomial expression.  This is defined
+@ as the coefficient of the maximum monomial.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+LCOEF
+´
+ $POLYçLIST $PORDER DUP SIZE GET HEAD
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ LMONO
+@
+@ polynomial ç monomial
+@
+@ Returns the leading monomial of a polynomial expression.  This is defined
+@ as the maximum monomial times the inverse of its coefficient.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+LMONO
+´
+ $POLYçLIST $PORDER DUP SIZE GET TAIL 1 SWAP + $LISTçMONO
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ LTERM
+@
+@ polynomial ç monomial
+@
+@ Returns the leading term of a polynomial expression.  This is defined
+@ as the maximum monomial.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+LTERM
+´
+ $POLYçLIST $PORDER DUP SIZE GET $LISTçMONO
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $PORDER
+@
+@ {list_polynomial1} ç {list_polynomial2}
+@
+@ Increasingly orders an internal polynomial list representation in respect to
+@ the internal monomial list representation comparison function given by the
+@ POLYORD CAS variable.
+@
+@ See: PORDER
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$PORDER
+´
+ RCLPOLYORD QUICKSORT
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PORDER
+@
+@ polynomial1 ç polynomial2
+@
+@ Increasingly orders a polynomial in respect to the internal monomial list
+@ representation comparison function given by the POLYORD CAS variable.
+@
+@ See: STOPOLYORD $PORDER
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PORDER
+´
+ $POLYçLIST $PORDER $LISTçPOLY
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PLEX
+@
+@  A               B
+@ {c1 e11 ... e1n} {c2 e21 ... e2n} ç int
+@
+@ Lexicographic order comparison for internal monomial list representation.
+@ In this order, A>B if the leftmost nonzero entry of the list
+@ {e11-e21 ... e1n-e2n} is positive, A<B if it is negative, and A=B in case
+@ there is no such entry.
+@
+@ See: QUICKSORT $MONOçLIST
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PLEX
+´
+ TAIL SWAP TAIL SWAP - 1.
+ WHILE GETI DUP NOT -64. FC? AND REPEAT DROP END
+ UNROT DROP2
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PREVLEX
+@
+@  A               B
+@ {c1 e11 ... e1n} {c2 e21 ... e2n} ç int
+@
+@ Reverse lexicographic order comparison for internal monomial list
+@ representation.  In this order, A>B if the rightmost nonzero entry of the list
+@ {e11-e21 ... e1n-e2n} is negative, A<B if it is positive, and A=B in case
+@ there is no such entry.
+@
+@ See: QUICKSORT $MONOçLIST
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PREVLEX
+´
+ TAIL SWAP TAIL SWAP - REVLIST 1.
+ WHILE GETI DUP NOT -64. FC? AND REPEAT DROP END
+ UNROT DROP2 NEG
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PGRLEX
+@
+@  A               B
+@ {c1 e11 ... e1n} {c2 e21 ... e2n} ç int
+@
+@ Graded lexicographic order comparison for internal monomial list
+@ representation.  In this order, A>B if e11+...+e1n>e21+...+e2n, or
+@ e11+...+e1n=e21+...+e2n and PLEX(A,B)>0.
+@
+@ See: QUICKSORT $MONOçLIST PLEX
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PGRLEX
+´
+ IF DUP2 TAIL SUMLIST SWAP TAIL SUMLIST SWAP - DUP
+ THEN UNROT DROP2
+ ELSE DROP PLEX
+ END
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PGREVLEX
+@
+@  A               B
+@ {c1 e11 ... e1n} {c2 e21 ... e2n} ç int
+@
+@ Graded reverse lexicographic order comparison for internal monomial list
+@ representation.  In this order, A>B if e11+...+e1n>e21+...+e2n, or
+@ e11+...+e1n=e21+...+e2n and PREVLEX(A,B)>0.
+@
+@ See: QUICKSORT $MONOçLIST PLEX
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PGREVLEX
+´
+ IF DUP2 TAIL SUMLIST SWAP TAIL SUMLIST SWAP - DUP
+ THEN UNROT DROP2
+ ELSE DROP PREVLEX
+ END
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $COEF
+@
+@ monomial ç number
+@
+@ Returns the coefficient of a monomial.
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$COEF
+´
+ RCLPOLYVX 1 OVER SIZE NDUPN çLIST PAIRLIST | EVAL
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $MONOçLIST
+@
+@ monomial ç {c e1 ... en}
+@
+@ Converts a monomial to the internal monomial list representation.
+@ In this representation the first element is the monomial's coefficient and
+@ subsequent elements are the powers of the monomial's variables declared in
+@ the CAS POLYVX variable, in the order defined thereof.
+@
+@ See: STOPOLYVX $LISTçMONO
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$MONOçLIST
+´
+ RCLVX NOVAL ç M VXB M.LNAME
+ ´
+  M $COEF
+
+  M LNAME NIP
+  IF DUP TYPE 5. ã THEN AXL END
+  'M.LNAME' STO
+
+  RCLPOLYVX 1.
+  DO GETI
+   IF DUP M.LNAME SWAP POS
+   THEN STOVX M DEGREE
+   ELSE DROP 0
+   END UNROT
+  UNTIL -64. FS? END
+
+  DROP SIZE 1. +  çLIST
+
+  VXB STOVX
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $LISTçMONO
+@
+@ {c e1 ... en} ç monomial
+@
+@ Converts internal monomial list representation back to an actual monomial.
+@
+@ See: $LISTçMONO
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$LISTçMONO
+´
+ DUP HEAD SWAP RCLPOLYVX SWAP TAIL ^ PRODLIST *
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $POLYçLIST
+@
+@ polynomial ç {{c1 e11 ... e1n} ... {cm em1 ... emn}}
+@
+@ Converts a polynomial to the internal polynomial list representation. This
+@ representation is just a list of monomials in the internal monomial list
+@ representation as described in $MONOçLIST.
+@
+@ See: $LISTçPOLY $MONOçLIST
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$POLYçLIST
+´
+ NOVAL 1. NOVAL NOVAL ç P L I A B
+ ´
+  P FDISTRIB çSTR "+" "''" SREPL DROP "(" "" SREPL DROP ")" "" SREPL DROP
+  "{" SWAP + "}" + STRç
+  1. '$MONOçLIST' DOLIST
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $LISTçPOLY
+@
+@ {{c1 e11 ... e1n} ... {cm em1 ... emn}} ç polynomial
+@
+@ Converts internal polynomial list representation back to an actual
+@ polynomial.
+@
+@ See: $POLYçLIST
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$LISTçPOLY
+´
+ 1. ´ $LISTçMONO ª DOLIST SUMLIST
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $MONODIV
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$MONODIV
+´
+ $MONOçLIST TAIL SWAP $MONOçLIST TAIL - 1.
+ WHILE GETI DUP 0. ä -64. FC? AND REPEAT DROP END
+ 0. ä UNROT DROP2
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ MONOMIALS
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+MONOMIALS
+´
+ ç p
+ ´
+  p $POLYçLIST 1. ´ $LISTçMONO ª DOLIST
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PDIV
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PDIV
+´
+ @P@ @input@
+ @D@ @input@
+ @Q@ NOVAL
+ @R@ 0
+ @I@ NOVAL
+ @M@ NOVAL
+ @D.SIZE@ NOVAL
+ @I.D.LTERM@ NOVAL
+ @P.LTERM@ NOVAL
+ ç
+ @Input 1: polynomial@ P
+ @Input 2: {divisors}@ D
+ @Output 1: {quotients}@ Q
+ @Output 3: {remainder}@ R
+ @{divisors} index@ I
+ @Division occurred (flag)@ M
+ @SIZE(D)@ D.SIZE
+ @LTERM(D(I))@ I.D.LTERM
+ @LTERM(P)@ P.LTERM
+ ´
+  D SIZE 'D.SIZE' STO
+  0 D.SIZE NDUPN çLIST 'Q' STO
+  WHILE P 0 SAME NOT REPEAT
+   1. 'I' STO
+   0. 'M' STO
+   WHILE I D.SIZE â M NOT AND REPEAT
+    'D' I GET LTERM 'I.D.LTERM' STO
+    P LTERM 'P.LTERM' STO
+
+    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    I.D.LTERM 10 CHR + P.LTERM + 1. DISP
+    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+    IF I.D.LTERM 0 SAME NOT
+       I.D.LTERM P.LTERM $MONODIV AND THEN
+     'Q' I DUP2 GET P.LTERM I.D.LTERM / + EVAL PUT
+     P P.LTERM I.D.LTERM / 'D' I GET * - EVAL 'P' STO
+     1. 'M' STO
+    ELSE
+     1. 'I' STO+
+    END
+   END
+   IF M NOT THEN
+     R P.LTERM + EVAL 'R' STO
+     P P.LTERM - EVAL 'P' STO
+   END
+  END
+  Q R
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $MONOLCM
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$MONOLCM
+´
+  ç m1 m2
+  ´
+  m1 $MONOçLIST TAIL
+  m2 $MONOçLIST TAIL
+  ´ MAX ª DOLIST 1 SWAP + $LISTçMONO
+  ª
+ª
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ SPOLY
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+SPOLY
+´
+ NOVAL NOVAL NOVAL ç p1 p2 lt1 lt2 lcm
+ ´
+  IF p1 0 SAME p2 0 SAME OR THEN $ROMID #1d LIBDOERR END
+
+  @ compute leading term (list form)
+  p1 LTERM 'lt1' STO
+  p2 LTERM 'lt2' STO
+
+  @ compute least common multiple of the leading terms
+  lt1 lt2 $MONOLCM 'lcm' STO
+
+  @ compute S-polynomial
+  lcm lt1 / p1 *
+  lcm lt2 / p2 *
+  - EVAL
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $POLYINT
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$POLYINT
+´
+ ç P
+ ´
+  P MONOMIALS 1. ´ $COEF FXND ª DOLIST UNPAIRLIST
+  ´ LCM ª STREAMLIST SWAP
+  ´ GCD ª STREAMLIST /
+  ABS P LCOEF SIGN *
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ POLYEQ
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+POLYEQ
+´
+ - EVAL 0 SAME
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ POSPOLY
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+POSPOLY
+´
+ 0. 0. ç l p r l.SIZE
+ ´
+	l SIZE 'l.SIZE' STO
+	IF l.SIZE 0. > THEN
+	 1. l.SIZE
+	 FOR I
+	  IF 'l' I GET p POLYEQ THEN
+	   I 'r' STO
+	   l.SIZE 'I' STO+
+	  END
+	 NEXT
+	END
+	r
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ POSPOLYPAIR
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+POSPOLYPAIR
+´
+ 0. 0. 0 0 0 0 ç l p r l.SIZE p1 p2 lp1 lp2
+ ´
+	p {'p1' 'p2'} STO
+	l SIZE 'l.SIZE' STO
+	IF l.SIZE 0. > THEN
+	 1. l.SIZE
+	 FOR I
+	  'l' I GET {'lp1' 'lp2'} STO
+	  IF p1 lp1 POLYEQ p2 lp2 POLYEQ AND
+	     p1 lp2 POLYEQ p2 lp1 POLYEQ AND OR
+	  THEN
+	   I 'r' STO
+	   l.SIZE 'I' STO+
+	  END
+	 NEXT
+	END
+	r
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ BUCHBERGER
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+BUCHBERGER
+´
+ {} {} {} 0 0 0 ç éR éP éG éB f1 f2 h
+ ´
+  @@@@@@@@@@@@@@@@@@@
+  CLLCD
+  @@@@@@@@@@@@@@@@@@@
+
+  $ReduceAll $NewBasis
+  WHILE éB {} ã REPEAT
+   $BuchDisp
+
+   éB HEAD {'f1' 'f2'} STO
+   éB TAIL 'éB' STO
+
+   IF f1 f2 $Criterion1 NOT
+      f1 f2 $Criterion2 NOT AND
+	 THEN
+    éG f1 f2 SPOLY $NormalForm 'h' STO
+    IF h 0 SAME NOT THEN
+     éG 1. ´ ç g ´ IF h LTERM g LTERM $MONODIV THEN g END ª ª DOLISTX 'éR' STO
+		 h 1. çLIST 'éP' STO
+		 éG 1. ´ ç g ´ IF éR g POSPOLY NOT THEN g END ª ª DOLISTX 'éG' STO
+     éB 1. ´ ç b ´ IF éR b HEAD POSPOLY éR b TAIL POSPOLY OR NOT THEN b END ª ª
+      DOLISTX 'éB' STO
+     $ReduceAll $NewBasis
+    END
+   END
+  END
+
+  IF éG {} SAME THEN {0}
+  ELSE éG 1. ´ DUP $POLYINT * EVAL ª DOLIST
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $BuchDisp
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$BuchDisp
+´
+ "Remaining: " éB SIZE RçI + 8. DISP
+ "Memory: " MEM + 9. DISP
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ PDIVORDER
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+PDIVORDER
+´
+ ç p1 p2
+ ´
+ 	p1 $POLYçLIST $PORDER DUP SIZE GET
+	p2 $POLYçLIST $PORDER DUP SIZE GET
+	RCLPOLYORD EVAL
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $NormalForm
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$NormalForm
+´
+ ç G P
+ ´
+	IF G {} ã	THEN
+	 P G ´ PDIVORDER ª QUICKSORT
+	 PDIV NIP
+	ELSE P
+	END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $ReduceAll
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$ReduceAll
+´
+ 0 {} {} ç h G0 P0
+ ´
+  WHILE éR {} ã REPEAT
+   éR HEAD 'h' STO
+   éR TAIL 'éR' STO
+   éG éP 1. ´ ç p ´ IF éG p POSPOLY NOT THEN p END ª ª DOLISTX + h $NormalForm 'h' STO
+   IF h 0 SAME NOT THEN
+    éG 1. ´ ç g ´ IF h LTERM g LTERM $MONODIV THEN g END ª ª DOLISTX 'G0' STO
+    éP 1. ´ ç p ´ IF h LTERM p LTERM $MONODIV THEN p END ª ª DOLISTX 'P0' STO
+    éG 1. ´ ç g ´ IF G0 g POSPOLY NOT THEN g END ª ª DOLISTX 'éG' STO
+    éP 1. ´ ç p ´ IF P0 p POSPOLY NOT THEN p END ª ª DOLISTX 'éP' STO
+    G0 1. ´ ç g0 ´ IF éR g0 POSPOLY NOT P0 g0 POSPOLY NOT AND THEN g0 END ª ª DOLISTX
+		P0 1. ´ ç p0 ´ IF éR p0 POSPOLY NOT G0 p0 POSPOLY NOT AND THEN p0 END ª ª DOLISTX
+		+ 'éR' STO+
+    éB 1. ´ ç b ´ IF G0 b HEAD POSPOLY G0 b TAIL POSPOLY OR NOT THEN b END ª ª
+     DOLISTX 'éB' STO
+    IF éP h POSPOLY NOT THEN éP h + 'éP' STO END
+   END
+  END
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $SelStrategy
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$SelStrategy
+´
+ 0 0 0 0 ç p1 p2 p1f1 p1f2 p2f1 p2f2
+ ´
+ 	p1 {'p1f1' 'p1f2'} STO
+	p2 {'p2f1' 'p2f2'} STO
+	p1f1 LTERM p1f2 LTERM $MONOLCM $MONOçLIST
+	p2f1 LTERM p2f2 LTERM $MONOLCM $MONOçLIST
+	RCLPOLYORD EVAL
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $NewBasis
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$NewBasis
+´
+ 0 0 0 0 {} {} ç p g h k H K
+ ´
+  éP 1. ´ ç p ´ IF éG p POSPOLY NOT THEN p END ª ª DOLISTX 'éG' STO+
+
+  IF éG SIZE 0 > THEN
+   1. éG SIZE
+   FOR g.I
+    'éG' g.I GET 'g' STO
+    1. éP SIZE
+    FOR p.I
+     'éP' p.I GET 'p' STO
+     IF g p POLYEQ NOT
+		    éB g p 2. çLIST POSPOLYPAIR NOT AND
+     THEN
+      g p 2. çLIST 1. çLIST 'éB' STO+
+     END
+    NEXT
+   NEXT
+  END
+	éB ´ $SelStrategy ª QUICKSORT 'éB' STO
+
+  éG 'H' STO
+  {} 'K' STO
+  WHILE H {} ã REPEAT
+   H HEAD 'h' STO
+   H TAIL 'H' STO
+   éG 1. ´ ç g ´ IF g h POLYEQ NOT THEN g END ª ª DOLISTX
+	  h $NormalForm 'k' STO
+   IF K k POSPOLY NOT THEN K k + 'K' STO END
+  END
+
+  K 'éG' STO
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $Criterion1
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$Criterion1
+´
+ 0 0. ç f1 f2 p c
+ ´
+  IF éG SIZE 0. > THEN
+   1. éG SIZE
+   FOR p.I
+    'éG' p.I GET 'p' STO
+    IF f1 p POLYEQ NOT f2 p POLYEQ NOT AND
+       p LTERM f1 LTERM f2 LTERM $MONOLCM $MONODIV AND
+       éB f1 p 2. çLIST POSPOLYPAIR NOT AND
+       éB p f2 2. çLIST POSPOLYPAIR NOT AND
+		THEN
+     1. 'c' STO
+    END
+   NEXT
+  END
+  c
+ ª
+ª
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ $Criterion2
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+$Criterion2
+´
+ ç f1 f2
+ ´
+  f1 LTERM f2 LTERM $MONOLCM f1 LMONO f2 LMONO * POLYEQ
+ ª
+ª
+
+END
+
+HOME 256 ATTACH '$D' PGDIR '$D' STO $D CRLIB
+HOME {$D $ROMID} RCL 1 çTAG PURGE 1 STO {$D $ROMID} RCL ATTACH
+HOME '$D' PGDIR
