@@ -1,7 +1,7 @@
 %%HP: T(0)A(D)F(.);
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ POLYNOMIAL.S -- 8FCAS polynomial library
+@ buchberger.rpl -- Buchberger algorithm implementation
 @
 @ Copyright (C) 2017 Bruno Felix Rezende Ribeiro <oitofelix@@gnu.org>
 @
@@ -21,7 +21,7 @@
 
 DIR
 
-$TITLE "POLYNOMIAL (8FCAS)"
+$TITLE "BUCHBERGER (8FKERNEL)"
 
 $ROMID 770.
 

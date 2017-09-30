@@ -1,7 +1,7 @@
 %%HP: T(0)A(D)F(.);
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@ KERNEL.S -- 8F UserRPL Kernel
+@ kernel.rpl -- 8F UserRPL Kernel
 @
 @ Copyright (C) 2017 Bruno Felix Rezende Ribeiro <oitofelix@@gnu.org>
 @
