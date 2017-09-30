@@ -41,7 +41,10 @@ the code below:
 - [VCS repository](https://github.com/oitofelix/8f-userrpl-kernel/)
 
 
-### 8F UserRPL Kernel based libraries
+### Extra libraries
+
+The libraries listed below are domain-specific and use the services
+provided by the kernel.
 
 - [buchberger.rpl](https://github.com/oitofelix/8f-userrpl-kernel/blob/master/buchberger.rpl): Implements the Buchberger's algorithm for computing Gröbner basis.
 
