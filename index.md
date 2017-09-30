@@ -28,11 +28,11 @@ installing itself as a library when sent to and evaluated on the
 calculator (or emulator).  However, before it can be rebuilt and
 installed again it must be first uninstalled.  The
 [uninstal.rpl](https://github.com/oitofelix/8f-userrpl-kernel/blob/master/uninstall.rpl)
-is meant for that.  Keep in mind a couple of things, though: for
-technical reasons the kernel (and any UserRPL library for that matter)
-must be built and installed before any other library that may depend
-on it can be successfully built, and the first kernel build usually
-fails with a harmless error (retrying fixes it).
+file is meant for that.  Keep in mind a couple of things, though: for
+technical reasons the kernel (and any library for that matter) must be
+built and installed before any other UserRPL library that depend on it
+can be successfully built, and the first kernel build usually fails
+with a harmless error (retrying fixes it).
 
 For now no binaries are provided.  You can build the kernel and other
 libraries by using the actual calculator or an emulator.  Just grab
@@ -41,7 +41,9 @@ the code below:
 - [VCS repository](https://github.com/oitofelix/8f-userrpl-kernel/)
 
 
-### Buchberger's algorithm library
+### 8F UserRPL Kernel based libraries
+
+- [buchberger.rpl](https://github.com/oitofelix/8f-userrpl-kernel/blob/master/buchberger.rpl): Implements the Buchberger's algorithm for computing Gröbner basis.
 
 
 </div>
